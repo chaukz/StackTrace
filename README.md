@@ -59,6 +59,8 @@ Search query
 - **Tests before claiming a milestone is done.** Include empty and malformed inputs and verify results using tiny sample corpora.
 - **Start in memory.** Persistence and concurrent indexing come after a correct single-process implementation.
 
+**Text normalization policy:** text is normalized with Unicode NFKC, then lowercased with `Locale.ROOT`. The tokenizer treats each contiguous run of Unicode letters and digits as one term; all other code points are separators. Token positions are zero-based among emitted terms, and punctuation does not create gaps.
+
 ## Technology
 
 | Layer | Choice |
@@ -140,19 +142,19 @@ This is a **target layout**, not a claim that the files exist. Create packages a
 
 - [x] Create local Git repository and add GitHub remote.
 - [x] Configure Java 25 in IntelliJ and Maven; resolve compiler/JDK mismatch (reported working).
-- [ ] Confirm the first commit is pushed to GitHub (`git log -1`, `git status`, `git remote -v`).
-- [ ] Add this README to the repository.
-- [ ] Confirm `./mvnw test` passes (or document the actual test command).
-- [ ] Add representative sample `.txt` and `.md` documents.
+- [x] Confirm the first commit is pushed to GitHub (`git log -1`, `git status`, `git remote -v`).
+- [x] Add this README to the repository.
+- [x] Confirm `./mvnw test` passes (or document the actual test command).
+- [x] Add representative sample `.txt` and `.md` documents.
 
 ### Milestone 1 — document modelling and text analysis
 
-- [ ] Create `Document` record (`int id`, `String title`, `Path path`).
-- [ ] Add document validation (positive ID, nonblank title, nonnull path) and tests.
-- [ ] Create `Token` record (normalized term and zero-based position).
-- [ ] Implement `TextNormalizer` (document the normalization policy).
-- [ ] Implement `Tokenizer` with preserved token positions.
-- [ ] Test case handling, punctuation, whitespace, empty text, repeated terms, and Unicode behavior.
+- [x] Create `Document` record (`int id`, `String title`, `Path path`).
+- [x] Add document validation (positive ID, nonblank title, nonnull path) and tests.
+- [x] Create `Token` record (normalized term and zero-based position).
+- [x] Implement `TextNormalizer` (document the normalization policy).
+- [x] Implement `Tokenizer` with preserved token positions.
+- [x] Test case handling, punctuation, whitespace, empty text, repeated terms, and Unicode behavior.
 - [ ] Commit: `feat: add document model and text analysis`.
 
 ### Milestone 2 — inverted index
