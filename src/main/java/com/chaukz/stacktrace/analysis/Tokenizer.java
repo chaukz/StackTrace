@@ -5,40 +5,29 @@ import com.chaukz.stacktrace.model.Token;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Splits normalized text into contiguous Unicode letter-or-digit runs. */
-public final class Tokenizer {
-    private final TextNormalizer normalizer;
-
-    public Tokenizer() {
-        this(new TextNormalizer());
-    }
-
-    public Tokenizer(TextNormalizer normalizer) {
-        if (normalizer == null) {
-            throw new IllegalArgumentException("Normalizer must not be null");
-        }
-        this.normalizer = normalizer;
-    }
-
+public class Tokenizer {
+    TextNormalizer normalizer = new TextNormalizer();
     public List<Token> tokenize(String text) {
-        String normalized = normalizer.normalize(text);
         List<Token> tokens = new ArrayList<>();
-        StringBuilder term = new StringBuilder();
+        text = normalizer.normalize(text);
         int position = 0;
+        StringBuilder sb = new StringBuilder();
 
-        for (int offset = 0; offset < normalized.length();) {
-            int codePoint = normalized.codePointAt(offset);
-            if (Character.isLetterOrDigit(codePoint)) {
-                term.appendCodePoint(codePoint);
-            } else if (!term.isEmpty()) {
-                tokens.add(new Token(term.toString(), position++));
-                term.setLength(0);
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+
+            if (Character.isLetterOrDigit(c)) {
+                sb.append(c);
             }
-            offset += Character.charCount(codePoint);
+            else if (sb.length() > 0){
+                tokens.add(new Token(sb.toString(), position));
+                position++;
+                sb.setLength(0);
+                }
+            }
+        if (sb.length() > 0) {
+            tokens.add(new Token(sb.toString(), position));
         }
-        if (!term.isEmpty()) {
-            tokens.add(new Token(term.toString(), position));
-        }
-        return List.copyOf(tokens);
+        return tokens;
     }
 }

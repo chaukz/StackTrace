@@ -155,7 +155,7 @@ This is a **target layout**, not a claim that the files exist. Create packages a
 - [x] Implement `TextNormalizer` (document the normalization policy).
 - [x] Implement `Tokenizer` with preserved token positions.
 - [x] Test case handling, punctuation, whitespace, empty text, repeated terms, and Unicode behavior.
-- [ ] Commit: `feat: add document model and text analysis`.
+- [x] Commit: `feat: add document model and text analysis`.
 
 ### Milestone 2 — inverted index
 
