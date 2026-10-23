@@ -7,4 +7,21 @@ import java.util.Map;
 
 public class DocumentRegistry {
     private final Map<Integer, Document> documents = new HashMap<>();
+
+    public void add(Document document) {
+      if (document == null) {
+          throw new IllegalArgumentException("Document must not be null");
+      }
+        if(documents.containsKey(Integer.valueOf(document.id()))) {
+            throw new IllegalArgumentException("Document with id " + document.id() + " already exists");
+        }
+        documents.put(document.id(), document);
+    }
+    public Document get(int id) {
+        return documents.get(id);
+    }
+    public boolean contains(int id) {
+        return documents.containsKey(id);
+    }
+
 }
