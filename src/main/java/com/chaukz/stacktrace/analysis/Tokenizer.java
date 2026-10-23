@@ -13,17 +13,18 @@ public class Tokenizer {
         int position = 0;
         StringBuilder sb = new StringBuilder();
 
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
+        for (int i = 0; i < text.length();) {
+            int codePoint = text.codePointAt(i);
 
-            if (Character.isLetterOrDigit(c)) {
-                sb.append(c);
+            if (Character.isLetterOrDigit(codePoint)) {
+                sb.appendCodePoint(codePoint);
             }
             else if (sb.length() > 0){
                 tokens.add(new Token(sb.toString(), position));
                 position++;
                 sb.setLength(0);
                 }
+            i += Character.charCount(codePoint);
             }
         if (sb.length() > 0) {
             tokens.add(new Token(sb.toString(), position));
