@@ -22,7 +22,7 @@ class InvertedIndexTest {
     }
 
     @Test
-    void ignoresLaterPostingForSameTermAndDocument() {
+    void mergesPositionsForSameTermAndDocument() {
         InvertedIndex index = new InvertedIndex();
         Posting first = new Posting(1, List.of(0));
         Posting later = new Posting(1, List.of(2));
@@ -30,6 +30,31 @@ class InvertedIndexTest {
 
         index.addPosting("java", later);
 
-        assertEquals(Map.of(1, first), index.getPostings("java"));
+        assertEquals(Map.of(1, new Posting(1, List.of(0, 2))), index.getPostings("java"));
+    }
+
+    @Test
+    void replacesOldPostingsWhenDocumentIsReindexed() {
+        InvertedIndex index = new InvertedIndex();
+        index.addPosting("java", new Posting(1, List.of(0)));
+
+        index.replaceDocument(1, Map.of("python", new Posting(1, List.of(0))));
+
+        assertEquals(Map.of(), index.getPostings("java"));
+        assertEquals(Map.of(1, new Posting(1, List.of(0))), index.getPostings("python"));
+    }
+
+    @Test
+    void removesDocumentPostingsAcrossTermsAndKeepsOtherDocuments() {
+        InvertedIndex index = new InvertedIndex();
+        Posting remaining = new Posting(2, List.of(1));
+        index.addPosting("java", new Posting(1, List.of(0)));
+        index.addPosting("java", remaining);
+        index.addPosting("python", new Posting(1, List.of(2)));
+
+        index.removeDocument(1);
+
+        assertEquals(Map.of(2, remaining), index.getPostings("java"));
+        assertEquals(Map.of(), index.getPostings("python"));
     }
 }
