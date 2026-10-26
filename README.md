@@ -39,26 +39,26 @@ Create classes **when needed**, not all upfront. Prefer a small vertical slice t
 > Check an item only after its code, tests, and acceptance criteria pass. Existing repository contents need verification; nothing below is assumed implemented.
 
 ### 0. Foundation
-- [ ] Verify Java 25, Maven build, and reproducible `mvn test`
+- [x] Verify Java 25, Maven build, and reproducible `mvn test`
 - [ ] Add `.gitignore`, meaningful project metadata, and a sample document corpus
-- [ ] Establish JUnit 5 tests and a framework-independent core
+- [x] Establish JUnit 5 tests and a framework-independent core
 
 ### 1. Document ingestion
-- [ ] Define document metadata and stable IDs within an index
+- [x] Define document metadata and stable IDs within an index
 - [ ] Recursively discover `.txt` / `.md`; ignore unsupported files and symlinks by policy
 - [ ] Read UTF-8 safely; handle empty, unreadable, and duplicate files predictably
 - [ ] Test discovery and file-reading edge cases
 
 ### 2. Text analysis
 - [ ] Implement case normalization and tokenization consistently for files and queries
-- [ ] Preserve token positions and count term occurrences
-- [ ] Test punctuation, whitespace, Unicode, case, and empty input
+- [x] Preserve token positions and count term occurrences
+- [x] Test punctuation, whitespace, Unicode, case, and empty input
 
 ### 3. Inverted index
-- [ ] Implement `term -> postings` with document ID, frequency, and positions
+- [x] Implement `term -> postings` with document ID, frequency, and positions
 - [ ] Maintain document metadata and document-frequency statistics
 - [ ] Ensure repeated indexing does not duplicate postings
-- [ ] Test index invariants against a small known corpus
+- [x] Test index invariants against a small known corpus
 
 ### 4. Query processing
 - [ ] Implement single-term queries and AND/OR operators with documented precedence
@@ -117,4 +117,4 @@ A runnable CLI command will be documented once Milestone 6 is implemented. Until
 
 ## Progress
 
-**Current status:** foundation/configuration work has been attempted, but implementation milestones have not been verified here. Update checkboxes based on the repository and passing tests, not assumptions.
+**Current status:** foundational tests, document metadata, token positions, and basic inverted-index operations are implemented and verified. File discovery, ingestion edge-case coverage, query integration, document-frequency statistics, repeated indexing, ranking, and the CLI remain incomplete.
