@@ -40,17 +40,17 @@ Create classes **when needed**, not all upfront. Prefer a small vertical slice t
 
 ### 0. Foundation
 - [x] Verify Java 25, Maven build, and reproducible `mvn test`
-- [ ] Add `.gitignore`, meaningful project metadata, and a sample document corpus
+- [x] Add `.gitignore`, meaningful project metadata, and a sample document corpus
 - [x] Establish JUnit 5 tests and a framework-independent core
 
 ### 1. Document ingestion
 - [x] Define document metadata and stable IDs within an index
-- [ ] Recursively discover `.txt` / `.md`; ignore unsupported files and symlinks by policy
-- [ ] Read UTF-8 safely; handle empty, unreadable, and duplicate files predictably
-- [ ] Test discovery and file-reading edge cases
+- [x] Recursively discover `.txt` / `.md`; ignore unsupported files and symlinks by policy
+- [x] Read UTF-8 safely; handle empty, unreadable, and duplicate files predictably
+- [x] Test discovery and file-reading edge cases
 
 ### 2. Text analysis
-- [ ] Implement case normalization and tokenization consistently for files and queries
+- [x] Implement case normalization and tokenization consistently for files and queries
 - [x] Preserve token positions and count term occurrences
 - [x] Test punctuation, whitespace, Unicode, case, and empty input
 
@@ -117,4 +117,4 @@ A runnable CLI command will be documented once Milestone 6 is implemented. Until
 
 ## Progress
 
-**Current status:** foundational tests, document metadata, token positions, and basic inverted-index operations are implemented and verified. File discovery, ingestion edge-case coverage, query integration, document-frequency statistics, repeated indexing, ranking, and the CLI remain incomplete.
+**Current status:** milestones 1 and 2 are implemented and covered by tests, including recursive file discovery, UTF-8 reading, stable per-directory IDs, and Unicode-aware tokenization. Document-frequency statistics, repeated indexing, query processing, ranking, and the CLI remain incomplete.

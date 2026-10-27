@@ -43,6 +43,17 @@ class DocumentRegistryTest {
     }
 
     @Test
+    void rejectsDuplicateNormalizedPathWithDifferentId() {
+        DocumentRegistry registry = new DocumentRegistry();
+        Path path = Path.of("notes.txt");
+        registry.add(new Document(1, "notes.txt", path));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> registry.add(new Document(2, "notes.txt", path.resolveSibling("folder")
+                        .resolve("../notes.txt"))));
+    }
+
+    @Test
     void rejectsNullDocument() {
         DocumentRegistry registry = new DocumentRegistry();
 
