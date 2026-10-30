@@ -12,9 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class IndexBuilderTest {
     @TempDir
@@ -93,5 +91,65 @@ class IndexBuilderTest {
 
         assertEquals(target.toAbsolutePath(), builder.registry.get(1).path());
         assertEquals(Map.of(1, new Posting(1, List.of(0))), builder.index.getPostings("target"));
+    }
+
+    @Test
+    void reindexingDocumentReplacesOldPostings() throws IOException {
+        // Arrange: Create and index the original document
+        Path file = directory.resolve("notes.txt");
+        Files.writeString(file, "java programming");
+
+        Document document = new Document(1, "Notes", file);
+        IndexBuilder builder = new IndexBuilder();
+
+        builder.indexDocument(document);
+
+        // Verify initial indexing
+        assertTrue(builder.index.getPostings("java").containsKey(1));
+        assertTrue(builder.index.getPostings("programming").containsKey(1));
+
+        // Act: Modify the file and reindex the same document
+        Files.writeString(file, "python programming");
+
+        builder.indexDocument(document);
+
+        // Assert: Old term removed
+        assertFalse(builder.index.getPostings("java").containsKey(1));
+
+        // New term added
+        assertTrue(builder.index.getPostings("python").containsKey(1));
+
+        // Unchanged term has exactly one occurrence
+        assertEquals(
+                1,
+                builder.index.getPostings("programming")
+                        .get(1)
+                        .frequency()
+        );
+
+        // Registry still contains the document
+        assertEquals(document, builder.registry.get(1));
+    }
+
+    @Test
+    void failedReindexingPreservesExistingPostings() throws IOException {
+        Path file = directory.resolve("notes.txt");
+        Files.writeString(file, "java programming");
+
+        Document document = new Document(1, "Notes", file);
+        IndexBuilder builder = new IndexBuilder();
+
+        builder.indexDocument(document);
+
+        Files.delete(file);
+
+        assertThrows(IOException.class, () -> builder.indexDocument(document));
+
+        assertEquals(
+                Map.of(1, new Posting(1, List.of(0))),
+                builder.index.getPostings("java")
+        );
+
+        assertEquals(document, builder.registry.get(1));
     }
 }

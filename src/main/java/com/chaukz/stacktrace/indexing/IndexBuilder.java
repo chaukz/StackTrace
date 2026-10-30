@@ -26,6 +26,7 @@ public class IndexBuilder {
 
     public void indexDocument(Document document) throws IOException {
         String text = Files.readString(document.path(), StandardCharsets.UTF_8);
+
         List<Token> tokens = tokenizer.tokenize(text);
         Map<String, List<Integer>> positonsByTerm = new HashMap<>();
         for (Token token : tokens) {
@@ -37,7 +38,7 @@ public class IndexBuilder {
         for (Map.Entry<String, List<Integer>> entry : positonsByTerm.entrySet()) {
             postings.put(entry.getKey(), new Posting(document.id(), entry.getValue()));
         }
-        registry.add(document);
+        registry.upsert(document);
         index.replaceDocument(document.id(), postings);
 
     }
