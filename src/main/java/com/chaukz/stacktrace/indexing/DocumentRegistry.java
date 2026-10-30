@@ -31,4 +31,26 @@ public class DocumentRegistry {
         return documents.containsKey(id);
     }
 
+
+    public void upsert(Document document){
+        if (document == null){
+            throw new IllegalArgumentException("Document must not be null");
+        }
+        Document existing = documents.get(document.id());
+        Path path = document.path().toAbsolutePath().normalize();
+        Integer existingId = documentsByPath.get(path);
+
+        if(existingId != null &&
+            existingId != document.id()){
+            throw new IllegalArgumentException("Document path " + path + " already exists");
+        }
+
+        if(existing != null &&
+           !existing.path().toAbsolutePath().normalize()
+           .equals(document.path().toAbsolutePath().normalize())){
+            throw new IllegalArgumentException("Document with id " + document.id() + " already exists");
+        }
+        documents.put(document.id(), document);
+        documentsByPath.put(path, document.id());
+    }
 }

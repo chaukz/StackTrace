@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class DocumentRegistryTest {
     @Test
@@ -58,5 +59,62 @@ class DocumentRegistryTest {
         DocumentRegistry registry = new DocumentRegistry();
 
         assertThrows(IllegalArgumentException.class, () -> registry.add(null));
+    }
+
+    @Test
+    void upsertAddsNewDocument() {
+        DocumentRegistry registry = new DocumentRegistry();
+        Document document = new Document(1, "Notes", Path.of("notes.txt"));
+
+        registry.upsert(document);
+
+        assertEquals(document, registry.get(1));
+        assertTrue(registry.contains(1));
+    }
+
+    @Test
+    void upsertUpdatesExistingDocument() {
+        DocumentRegistry registry = new DocumentRegistry();
+        Document original = new Document(1, "Old Notes", Path.of("notes.txt"));
+        Document updated = new Document(1, "Updated Notes", Path.of("notes.txt"));
+
+        registry.upsert(original);
+        registry.upsert(updated);
+
+        assertEquals(updated, registry.get(1));
+        assertEquals("Updated Notes", registry.get(1).title());
+    }
+
+    @Test
+    void upsertRejectsConflictingIds() {
+        DocumentRegistry registry = new DocumentRegistry();
+        Document original = new Document(1, "Java", Path.of("java.txt"));
+        Document conflicting = new Document(1, "Python", Path.of("python.txt"));
+
+        registry.upsert(original);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> registry.upsert(conflicting)
+        );
+
+        assertEquals(original, registry.get(1));
+    }
+
+    @Test
+    void upsertRejectsConflictingPaths() {
+        DocumentRegistry registry = new DocumentRegistry();
+        Document original = new Document(1, "Java", Path.of("java.txt"));
+        Document conflicting = new Document(2, "Java Copy", Path.of("java.txt"));
+
+        registry.upsert(original);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> registry.upsert(conflicting)
+        );
+
+        assertEquals(original, registry.get(1));
+        assertFalse(registry.contains(2));
     }
 }
