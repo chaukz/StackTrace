@@ -117,4 +117,27 @@ class DocumentRegistryTest {
         assertEquals(original, registry.get(1));
         assertFalse(registry.contains(2));
     }
+
+    @Test
+    void documentCountTracksUniqueDocuments() {
+        DocumentRegistry registry = new DocumentRegistry();
+
+        assertEquals(0, registry.documentCount());
+
+        registry.upsert(new Document(1, "Java", Path.of("java.txt")));
+        assertEquals(1, registry.documentCount());
+
+        registry.upsert(new Document(5, "Python", Path.of("python.txt")));
+        assertEquals(2, registry.documentCount());
+
+        registry.upsert(new Document(1, "Updated Java", Path.of("java.txt")));
+        assertEquals(2, registry.documentCount());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> registry.upsert(new Document(6, "Duplicate", Path.of("java.txt")))
+        );
+
+        assertEquals(2, registry.documentCount());
+    }
 }

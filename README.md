@@ -56,8 +56,8 @@ Create classes **when needed**, not all upfront. Prefer a small vertical slice t
 
 ### 3. Inverted index
 - [x] Implement `term -> postings` with document ID, frequency, and positions
-- [ ] Maintain document metadata and document-frequency statistics
-- [ ] Ensure repeated indexing does not duplicate postings
+- [x] Maintain document metadata and document-frequency statistics
+- [x] Ensure repeated indexing does not duplicate postings
 - [x] Test index invariants against a small known corpus
 
 ### 4. Query processing

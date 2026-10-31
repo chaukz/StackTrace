@@ -53,4 +53,8 @@ public class DocumentRegistry {
         documents.put(document.id(), document);
         documentsByPath.put(path, document.id());
     }
+
+    public int documentCount(){
+        return documents.size();
+    }
 }
