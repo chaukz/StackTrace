@@ -40,7 +40,7 @@ public class IndexBuilder {
         }
         registry.upsert(document);
         index.replaceDocument(document.id(), postings);
-
+        index.setDocumentLength(document.id(), tokens.size());
     }
 
     public void indexDirectory(Path directory) throws IOException {

@@ -1,3 +1,5 @@
 package com.chaukz.stacktrace.model;
 
-public record SearchResult (int documentId, double score) {}
+import java.nio.file.Path;
+
+public record SearchResult(int documentId, Path path, String title, double score) {}

@@ -10,7 +10,15 @@ import java.util.stream.Stream;
 
 public class InvertedIndex {
     Map<String, Map<Integer, Posting>> index = new Hashtable<>();
+    private final Map<Integer, Integer> documentLengths = new Hashtable<>();
 
+    public void setDocumentLength(int documentId, int length) {
+        documentLengths.put(documentId, length);
+    }
+
+    public int getDocumentLength(int documentId) {
+        return documentLengths.getOrDefault(documentId, 0);
+    }
     public void addPosting(String term, Posting posting) {
         Map<Integer, Posting> postings = index.computeIfAbsent(term, k -> new Hashtable<>());
         Posting existing = postings.get(posting.documentId());

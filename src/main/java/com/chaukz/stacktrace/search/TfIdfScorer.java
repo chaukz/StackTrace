@@ -13,6 +13,10 @@ public class TfIdfScorer {
         this.registry = registry;
     }
 
+    DocumentRegistry registry() {
+        return registry;
+    }
+
     public double inverseDocumentFrequency(String term) {
         int N = registry.documentCount();
         int df = index.documentFrequency(term);
@@ -31,5 +35,15 @@ public class TfIdfScorer {
         double idf = inverseDocumentFrequency(term);
 
         return tf * idf;
+    }
+
+    public double normalizedScore(String term, int documentId) {
+        int length = index.getDocumentLength(documentId);
+        if (length == 0) {
+            return 0.0;
+        }
+
+        int tf = index.termFrequency(term, documentId);
+        return (double) tf / length * inverseDocumentFrequency(term);
     }
 }

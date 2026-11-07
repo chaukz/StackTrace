@@ -67,10 +67,14 @@ Create classes **when needed**, not all upfront. Prefer a small vertical slice t
 - [x] Test retrieval correctness and deterministic ordering
 
 ### 5. Ranking and results
-- [ ] Implement a documented TF-IDF formula with length normalization
-- [ ] Implement top-K selection with a bounded min-heap
-- [ ] Return path, title, score, and consistent tie-breaking
-- [ ] Test relevance ordering and compare heap selection with full sort
+- [x] Implement a documented TF-IDF formula with length normalization
+- [x] Implement top-K selection with a bounded min-heap
+- [x] Return path, title, score, and consistent tie-breaking
+- [x] Test relevance ordering and compare heap selection with full sort
+
+Ranked search scores each matching term with `(term frequency / document token count) * ln(registered document count / document frequency)` and sums the term scores for `AND` and `OR` queries. `NOT` only filters by its excluded term. A zero-length document scores zero. Results contain the document ID, path, title, and score; ties are ordered by ascending document ID.
+
+`SearchEngine.searchRanked(query)` returns the full sorted ranking. `searchRanked(query, k)` returns the best `k` results using a bounded min-heap; `k = 0` returns an empty list and negative `k` is invalid. Heap selection takes `O(m log k)` time and `O(k)` heap space for `m` matches, while the full sort takes `O(m log m)` time. Query retrieval also materializes the matching document IDs.
 
 ### 6. Usable MVP
 - [ ] Provide CLI commands to index a directory and run searches
@@ -117,4 +121,4 @@ A runnable CLI command will be documented once Milestone 6 is implemented. Until
 
 ## Progress
 
-**Current status:** milestones 1 and 2 are implemented and covered by tests, including recursive file discovery, UTF-8 reading, stable per-directory IDs, and Unicode-aware tokenization. Document-frequency statistics, repeated indexing, query processing, ranking, and the CLI remain incomplete.
+**Current status:** milestones 1 through 5 are implemented and covered by tests, including length-normalized TF-IDF ranking and top-K selection. The CLI and other milestone 6 work remain incomplete.

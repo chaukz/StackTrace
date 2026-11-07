@@ -81,4 +81,19 @@ class TfIdfScorerTest {
         // Unknown document
         assertEquals(0.0, scorer.score("java", 99), 0.000001);
     }
+
+    @Test
+    void normalizesTermFrequencyByDocumentLength() {
+        InvertedIndex index = new InvertedIndex();
+        DocumentRegistry registry = new DocumentRegistry();
+        registry.add(new Document(1, "Java", Path.of("java.txt")));
+        registry.add(new Document(2, "Python", Path.of("python.txt")));
+        index.addPosting("java", new Posting(1, List.of(0)));
+        index.setDocumentLength(1, 4);
+
+        TfIdfScorer scorer = new TfIdfScorer(index, registry);
+
+        assertEquals(0.25 * Math.log(2.0), scorer.normalizedScore("java", 1), 0.000001);
+        assertEquals(0.0, scorer.normalizedScore("java", 2));
+    }
 }

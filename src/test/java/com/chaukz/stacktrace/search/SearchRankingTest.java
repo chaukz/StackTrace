@@ -42,6 +42,11 @@ class SearchRankingTest {
         // Python occurs in one document
         index.addPosting("python", new Posting(2, List.of(0, 5)));
 
+        index.setDocumentLength(1, 10);
+        index.setDocumentLength(2, 10);
+        index.setDocumentLength(3, 10);
+        index.setDocumentLength(4, 10);
+
         TfIdfScorer scorer = new TfIdfScorer(index, registry);
         engine = new SearchEngine(index, scorer);
     }
@@ -59,9 +64,11 @@ class SearchRankingTest {
 
         double idf = Math.log(4.0 / 3);
 
-        assertEquals(3 * idf, results.get(0).score(), 0.000001);
-        assertEquals(2 * idf, results.get(1).score(), 0.000001);
-        assertEquals(1 * idf, results.get(2).score(), 0.000001);
+        assertEquals((3.0 / 10) * idf, results.get(0).score(), 0.000001);
+        assertEquals((2.0 / 10) * idf, results.get(1).score(), 0.000001);
+        assertEquals((1.0 / 10) * idf, results.get(2).score(), 0.000001);
+        assertEquals(Path.of("java.txt"), results.get(0).path());
+        assertEquals("Java Basics", results.get(0).title());
     }
 
     @Test
@@ -89,7 +96,9 @@ class SearchRankingTest {
     @Test
     void andRanksOnlyDocumentsContainingBothTerms() {
         assertEquals(
-                List.of(new SearchResult(2, Math.log(4.0 / 3) + 2 * Math.log(4))),
+                List.of(new SearchResult(2, Path.of("python.txt"), "Python Basics",
+                        (1.0 / 10) * Math.log(4.0 / 3)
+                        + (2.0 / 10) * Math.log(4))),
                 engine.searchRanked("JAVA and PYTHON")
         );
     }
@@ -100,9 +109,10 @@ class SearchRankingTest {
 
         assertEquals(
                 List.of(
-                        new SearchResult(2, javaIdf + 2 * Math.log(4)),
-                        new SearchResult(1, 3 * javaIdf),
-                        new SearchResult(3, 2 * javaIdf)
+                        new SearchResult(2, Path.of("python.txt"), "Python Basics",
+                                (1.0 / 10) * javaIdf + (2.0 / 10) * Math.log(4)),
+                        new SearchResult(1, Path.of("java.txt"), "Java Basics", (3.0 / 10) * javaIdf),
+                        new SearchResult(3, Path.of("advanced.txt"), "Advanced Java", (2.0 / 10) * javaIdf)
                 ),
                 engine.searchRanked("java OR python")
         );
@@ -114,8 +124,8 @@ class SearchRankingTest {
 
         assertEquals(
                 List.of(
-                        new SearchResult(1, 3 * javaIdf),
-                        new SearchResult(3, 2 * javaIdf)
+                        new SearchResult(1, Path.of("java.txt"), "Java Basics", (3.0 / 10) * javaIdf),
+                        new SearchResult(3, Path.of("advanced.txt"), "Advanced Java", (2.0 / 10) * javaIdf)
                 ),
                 engine.searchRanked("java NOT python")
         );
@@ -163,6 +173,8 @@ class SearchRankingTest {
 
         index.addPosting("java", new Posting(3, List.of(0)));
         index.addPosting("java", new Posting(1, List.of(0)));
+        index.setDocumentLength(1, 10);
+        index.setDocumentLength(3, 10);
 
         SearchEngine tiedEngine = new SearchEngine(
                 index,
@@ -175,6 +187,7 @@ class SearchRankingTest {
         assertEquals(1, results.get(0).documentId());
         assertEquals(3, results.get(1).documentId());
         assertEquals(results.get(0).score(), results.get(1).score(), 0.000001);
+        assertTrue(results.get(0).score() > 0);
     }
 
     @Test
@@ -185,5 +198,61 @@ class SearchRankingTest {
                 IllegalStateException.class,
                 () -> basicEngine.searchRanked("java")
         );
+    }
+
+    @Test
+    void shorterDocumentCanOutrankLongerDocumentWithMoreMatches() {
+        InvertedIndex index = new InvertedIndex();
+        DocumentRegistry registry = new DocumentRegistry();
+        registry.add(new Document(1, "Short", Path.of("short.txt")));
+        registry.add(new Document(2, "Long", Path.of("long.txt")));
+        registry.add(new Document(3, "Other", Path.of("other.txt")));
+        index.addPosting("java", new Posting(1, List.of(0, 1)));
+        index.addPosting("java", new Posting(2, List.of(0, 1, 2)));
+        index.setDocumentLength(1, 4);
+        index.setDocumentLength(2, 12);
+        index.setDocumentLength(3, 1);
+        SearchEngine ranked = new SearchEngine(index, new TfIdfScorer(index, registry));
+
+        List<SearchResult> results = ranked.searchRanked("java");
+
+        assertEquals(List.of(1, 2), results.stream().map(SearchResult::documentId).toList());
+        assertEquals(0.5 * Math.log(3.0 / 2), results.get(0).score(), 0.000001);
+        assertEquals(0.25 * Math.log(3.0 / 2), results.get(1).score(), 0.000001);
+    }
+
+    @Test
+    void topKMatchesPrefixOfFullRanking() {
+        for (String query : List.of("java", "java AND python", "java OR python", "java NOT python")) {
+            List<SearchResult> full = engine.searchRanked(query);
+            for (int k = 0; k <= full.size() + 1; k++) {
+                assertEquals(full.subList(0, Math.min(k, full.size())), engine.searchRanked(query, k));
+            }
+        }
+    }
+
+    @Test
+    void topKUsesDocumentIdToBreakScoreTies() {
+        InvertedIndex index = new InvertedIndex();
+        DocumentRegistry registry = new DocumentRegistry();
+        registry.add(new Document(1, "First", Path.of("first.txt")));
+        registry.add(new Document(2, "Second", Path.of("second.txt")));
+        registry.add(new Document(3, "Other", Path.of("other.txt")));
+        index.addPosting("java", new Posting(2, List.of(0)));
+        index.addPosting("java", new Posting(1, List.of(0)));
+        index.setDocumentLength(1, 2);
+        index.setDocumentLength(2, 2);
+        SearchEngine ranked = new SearchEngine(index, new TfIdfScorer(index, registry));
+
+        assertEquals(1, ranked.searchRanked("java", 1).get(0).documentId());
+    }
+
+    @Test
+    void topKHandlesEmptyAndInvalidRequests() {
+        assertTrue(engine.searchRanked("unknown", 3).isEmpty());
+        assertTrue(engine.searchRanked(" ", 3).isEmpty());
+        assertTrue(engine.searchRanked(null, 3).isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> engine.searchRanked("java", -1));
+        assertThrows(IllegalArgumentException.class, () -> engine.searchRanked("java XOR python", 2));
     }
 }

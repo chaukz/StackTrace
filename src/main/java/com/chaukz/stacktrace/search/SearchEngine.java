@@ -1,7 +1,9 @@
 package com.chaukz.stacktrace.search;
 
 import com.chaukz.stacktrace.analysis.Tokenizer;
+import com.chaukz.stacktrace.indexing.DocumentRegistry;
 import com.chaukz.stacktrace.indexing.InvertedIndex;
+import com.chaukz.stacktrace.model.Document;
 import com.chaukz.stacktrace.model.SearchResult;
 import com.chaukz.stacktrace.model.Token;
 
@@ -9,9 +11,14 @@ import java.util.*;
 
 public class SearchEngine {
 
+    private static final Comparator<SearchResult> BEST_FIRST =
+            Comparator.comparingDouble(SearchResult::score).reversed()
+                    .thenComparingInt(SearchResult::documentId);
+
     private final Tokenizer tokenizer;
     private final InvertedIndex index;
     private final TfIdfScorer scorer;
+    private final DocumentRegistry registry;
 
     // Constructor for existing Boolean search tests
     public SearchEngine(InvertedIndex index) {
@@ -23,6 +30,7 @@ public class SearchEngine {
         this.index = Objects.requireNonNull(index);
         this.tokenizer = new Tokenizer();
         this.scorer = scorer;
+        this.registry = scorer == null ? null : scorer.registry();
     }
 
     // Single-term search
@@ -121,19 +129,28 @@ public class SearchEngine {
     private double calculateQueryScore(String query, int documentId) {
         String[] parts = query.trim().split("\\s+");
         List<Token> firstTokens = tokenizer.tokenize(parts[0]);
-        double firstScore = firstTokens.isEmpty() ? 0.0 : scorer.score(firstTokens.get(0).term(), documentId);
+        double firstScore = firstTokens.isEmpty() ? 0.0 : scorer.normalizedScore(firstTokens.get(0).term(), documentId);
 
         if (parts.length == 1 || parts[1].equalsIgnoreCase("NOT")) {
             return firstScore;
         }
 
         List<Token> secondTokens = tokenizer.tokenize(parts[2]);
-        return firstScore + (secondTokens.isEmpty() ? 0.0 : scorer.score(secondTokens.get(0).term(), documentId));
+        return firstScore + (secondTokens.isEmpty() ? 0.0 : scorer.normalizedScore(secondTokens.get(0).term(), documentId));
+    }
+
+    private SearchResult result(String query, int documentId) {
+        Document document = registry.get(documentId);
+        if (document == null) {
+            throw new IllegalStateException("No metadata for document " + documentId);
+        }
+        return new SearchResult(documentId, document.path(), document.title(),
+                calculateQueryScore(query, documentId));
     }
 
     // Ranked search using TF-IDF
     public List<SearchResult> searchRanked(String query) {
-        if (scorer == null) {
+        if (scorer == null || registry == null) {
             throw new IllegalStateException(
                     "TF-IDF scorer is not configured"
             );
@@ -147,20 +164,38 @@ public class SearchEngine {
         List<SearchResult> results = new ArrayList<>();
 
         for (int documentId : documentIds) {
-            double score = calculateQueryScore(query, documentId);
-
-            results.add(
-                    new SearchResult(documentId, score)
-            );
+            results.add(result(query, documentId));
         }
 
-        // Highest relevance first; document ID breaks ties
-        results.sort(
-                Comparator.comparingDouble(SearchResult::score)
-                        .reversed()
-                        .thenComparingInt(SearchResult::documentId)
-        );
+        results.sort(BEST_FIRST);
 
+        return results;
+    }
+
+    public List<SearchResult> searchRanked(String query, int k) {
+        if (k < 0) {
+            throw new IllegalArgumentException("k must not be negative");
+        }
+        if (scorer == null || registry == null) {
+            throw new IllegalStateException("TF-IDF scorer is not configured");
+        }
+        if (k == 0 || query == null || query.isBlank()) {
+            return List.of();
+        }
+
+        PriorityQueue<SearchResult> best = new PriorityQueue<>(BEST_FIRST.reversed());
+        for (int documentId : search(query)) {
+            SearchResult candidate = result(query, documentId);
+            if (best.size() < k) {
+                best.add(candidate);
+            } else if (BEST_FIRST.compare(candidate, best.peek()) < 0) {
+                best.poll();
+                best.add(candidate);
+            }
+        }
+
+        List<SearchResult> results = new ArrayList<>(best);
+        results.sort(BEST_FIRST);
         return results;
     }
 }
