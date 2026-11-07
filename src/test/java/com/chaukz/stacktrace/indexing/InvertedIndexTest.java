@@ -84,4 +84,19 @@ class InvertedIndexTest {
 
         assertEquals(2, index.documentFrequency("java"));
     }
+
+    @Test
+    void calculatesTermFrequencyCorrectly() {
+        InvertedIndex index = new InvertedIndex();
+
+        index.addPosting("java", new Posting(1, List.of(0, 3, 7)));
+        index.addPosting("java", new Posting(2, List.of(1)));
+        index.addPosting("python", new Posting(3, List.of(0, 2)));
+
+        assertEquals(3, index.termFrequency("java", 1));
+        assertEquals(1, index.termFrequency("java", 2));
+        assertEquals(0, index.termFrequency("java", 3));
+        assertEquals(0, index.termFrequency("rust", 1));
+        assertEquals(0, index.termFrequency("java", 99));
+    }
 }

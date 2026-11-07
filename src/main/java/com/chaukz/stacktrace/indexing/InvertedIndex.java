@@ -67,5 +67,10 @@ public class InvertedIndex {
     public int documentFrequency(String term) {
         return index.getOrDefault(term, Map.of()).size();
     }
+
+    public int termFrequency(String term, int documentId) {
+        Posting posting = getPostings(term).get(documentId);
+        return posting == null ? 0 : posting.frequency();
+    }
 }
 
