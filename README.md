@@ -61,10 +61,10 @@ Create classes **when needed**, not all upfront. Prefer a small vertical slice t
 - [x] Test index invariants against a small known corpus
 
 ### 4. Query processing
-- [ ] Implement single-term queries and AND/OR operators with documented precedence
-- [ ] Use postings intersections/unions instead of rescanning all documents
-- [ ] Handle unknown terms, empty queries, and invalid syntax
-- [ ] Test retrieval correctness and deterministic ordering
+- [x] Implement single-term queries and AND/OR operators with documented precedence
+- [x] Use postings intersections/unions instead of rescanning all documents
+- [x] Handle unknown terms, empty queries, and invalid syntax
+- [x] Test retrieval correctness and deterministic ordering
 
 ### 5. Ranking and results
 - [ ] Implement a documented TF-IDF formula with length normalization
