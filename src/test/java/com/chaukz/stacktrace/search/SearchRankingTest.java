@@ -87,21 +87,49 @@ class SearchRankingTest {
     }
 
     @Test
-    void rejectsBooleanQueriesForNow() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> engine.searchRanked("java AND python")
+    void andRanksOnlyDocumentsContainingBothTerms() {
+        assertEquals(
+                List.of(new SearchResult(2, Math.log(4.0 / 3) + 2 * Math.log(4))),
+                engine.searchRanked("JAVA and PYTHON")
         );
+    }
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> engine.searchRanked("java OR python")
-        );
+    @Test
+    void orAddsBothTermScoresForMatchingDocuments() {
+        double javaIdf = Math.log(4.0 / 3);
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> engine.searchRanked("java NOT python")
+        assertEquals(
+                List.of(
+                        new SearchResult(2, javaIdf + 2 * Math.log(4)),
+                        new SearchResult(1, 3 * javaIdf),
+                        new SearchResult(3, 2 * javaIdf)
+                ),
+                engine.searchRanked("java OR python")
         );
+    }
+
+    @Test
+    void notUsesExcludedTermOnlyAsFilter() {
+        double javaIdf = Math.log(4.0 / 3);
+
+        assertEquals(
+                List.of(
+                        new SearchResult(1, 3 * javaIdf),
+                        new SearchResult(3, 2 * javaIdf)
+                ),
+                engine.searchRanked("java NOT python")
+        );
+    }
+
+    @Test
+    void invalidRankedQueriesStillFail() {
+        assertThrows(IllegalArgumentException.class, () -> engine.searchRanked("java XOR python"));
+        assertThrows(IllegalArgumentException.class, () -> engine.searchRanked("java AND"));
+    }
+
+    @Test
+    void emptyTokenInOrQueryDoesNotPreventOtherTermFromRanking() {
+        assertEquals(engine.searchRanked("java"), engine.searchRanked("!!! OR java"));
     }
 
     @Test

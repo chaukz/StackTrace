@@ -118,6 +118,19 @@ public class SearchEngine {
         return result;
     }
 
+    private double calculateQueryScore(String query, int documentId) {
+        String[] parts = query.trim().split("\\s+");
+        List<Token> firstTokens = tokenizer.tokenize(parts[0]);
+        double firstScore = firstTokens.isEmpty() ? 0.0 : scorer.score(firstTokens.get(0).term(), documentId);
+
+        if (parts.length == 1 || parts[1].equalsIgnoreCase("NOT")) {
+            return firstScore;
+        }
+
+        List<Token> secondTokens = tokenizer.tokenize(parts[2]);
+        return firstScore + (secondTokens.isEmpty() ? 0.0 : scorer.score(secondTokens.get(0).term(), documentId));
+    }
+
     // Ranked search using TF-IDF
     public List<SearchResult> searchRanked(String query) {
         if (scorer == null) {
@@ -130,27 +143,11 @@ public class SearchEngine {
             return List.of();
         }
 
-        String[] parts = query.trim().split("\\s+");
-
-        if (parts.length != 1) {
-            throw new IllegalArgumentException(
-                    "Ranked search currently supports single-term queries only"
-            );
-        }
-
-        List<Token> tokens = tokenizer.tokenize(parts[0]);
-
-        if (tokens.isEmpty()) {
-            return List.of();
-        }
-
-        String term = tokens.get(0).term();
-
-        Set<Integer> documentIds = searchTerm(term);
+        Set<Integer> documentIds = search(query);
         List<SearchResult> results = new ArrayList<>();
 
         for (int documentId : documentIds) {
-            double score = scorer.score(term, documentId);
+            double score = calculateQueryScore(query, documentId);
 
             results.add(
                     new SearchResult(documentId, score)
