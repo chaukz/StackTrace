@@ -1,124 +1,221 @@
 # StackTrace
 
-**StackTrace** is a local document search engine built with **Java 25** to learn data structures, algorithms, and search-engine design by implementing the core search logic from scratch.
+**StackTrace** is a local document search engine written in **Java 25**. It is a project-driven exploration of data structures, algorithms, and search-engine design: document ingestion, tokenization, inverted indexing, Boolean retrieval, and relevance ranking are implemented in Java rather than delegated to a search library.
 
-The MVP indexes UTF-8 `.txt` and `.md` files in a selected directory, then supports fast keyword search, Boolean queries, relevance ranking, and top-K results through a CLI.
+StackTrace indexes UTF-8 `.txt` and `.md` files from a directory and lets you search them from a command line or an interactive terminal session.
 
-## Scope
+## Features
 
-**MVP:** recursive file discovery, text normalization, inverted index, AND/OR search, TF-IDF scoring, top-K ranking, CLI, automated tests.
+- **Recursive document discovery:** indexes `.txt` and `.md` files in nested directories; skips unsupported file types and symbolic links.
+- **Text processing:** normalization, tokenization, term frequencies, and token positions.
+- **Inverted index:** maps terms to document postings for efficient retrieval.
+- **Boolean search:** single terms and two-term `AND`, `OR`, and `NOT` queries.
+- **Relevance ranking:** document-length-normalized TF-IDF with deterministic tie-breaking.
+- **Top-K results:** uses a bounded priority queue to return the highest-ranked matches.
+- **Interactive CLI:** index once, run multiple queries, and exit when finished.
+- **Automated tests:** unit, integration, and interactive CLI regression tests using JUnit 5.
 
-**Later:** persisted indexes, incremental updates, snippets, BM25, fuzzy search, autocomplete, PDF parsing, and a REST API. No web crawler or semantic/AI search in the MVP.
+## Requirements
 
-## Architecture
+- Java **25**
+- A terminal; the included Maven wrapper (`./mvnw`) handles the Maven build
 
-```text
-Local files -> File reader -> Tokenizer/normalizer -> Index builder -> Inverted index
-                                                                  |
-CLI query -> Query parser -> Boolean retrieval -> TF-IDF scorer -> Top-K results
-```
-
-Keep the **search core independent of Spring Boot**. Spring Boot may be used later as an adapter/API; core algorithms must be usable and testable without a running framework or database.
-
-Suggested packages (adapt to the existing package root):
-
-```text
-model/       Document, Token, Posting, SearchResult
-analysis/    Tokenizer, TextNormalizer
-index/       InvertedIndex, IndexBuilder, DocumentRegistry
-io/          File discovery and document reading
-query/       Query parsing and Boolean retrieval
-ranking/     RankingStrategy, TfIdfRanker, TopKSelector
-cli/         Command-line entry point
-```
-
-Create classes **when needed**, not all upfront. Prefer a small vertical slice that compiles and works end to end.
-
-## Implementation checklist
-
-> Check an item only after its code, tests, and acceptance criteria pass. Existing repository contents need verification; nothing below is assumed implemented.
-
-### 0. Foundation
-- [x] Verify Java 25, Maven build, and reproducible `mvn test`
-- [x] Add `.gitignore`, meaningful project metadata, and a sample document corpus
-- [x] Establish JUnit 5 tests and a framework-independent core
-
-### 1. Document ingestion
-- [x] Define document metadata and stable IDs within an index
-- [x] Recursively discover `.txt` / `.md`; ignore unsupported files and symlinks by policy
-- [x] Read UTF-8 safely; handle empty, unreadable, and duplicate files predictably
-- [x] Test discovery and file-reading edge cases
-
-### 2. Text analysis
-- [x] Implement case normalization and tokenization consistently for files and queries
-- [x] Preserve token positions and count term occurrences
-- [x] Test punctuation, whitespace, Unicode, case, and empty input
-
-### 3. Inverted index
-- [x] Implement `term -> postings` with document ID, frequency, and positions
-- [x] Maintain document metadata and document-frequency statistics
-- [x] Ensure repeated indexing does not duplicate postings
-- [x] Test index invariants against a small known corpus
-
-### 4. Query processing
-- [x] Implement single-term queries and AND/OR operators with documented precedence
-- [x] Use postings intersections/unions instead of rescanning all documents
-- [x] Handle unknown terms, empty queries, and invalid syntax
-- [x] Test retrieval correctness and deterministic ordering
-
-### 5. Ranking and results
-- [x] Implement a documented TF-IDF formula with length normalization
-- [x] Implement top-K selection with a bounded min-heap
-- [x] Return path, title, score, and consistent tie-breaking
-- [x] Test relevance ordering and compare heap selection with full sort
-
-Ranked search scores each matching term with `(term frequency / document token count) * ln(registered document count / document frequency)` and sums the term scores for `AND` and `OR` queries. `NOT` only filters by its excluded term. A zero-length document scores zero. Results contain the document ID, path, title, and score; ties are ordered by ascending document ID.
-
-`SearchEngine.searchRanked(query)` returns the full sorted ranking. `searchRanked(query, k)` returns the best `k` results using a bounded min-heap; `k = 0` returns an empty list and negative `k` is invalid. Heap selection takes `O(m log k)` time and `O(k)` heap space for `m` matches, while the full sort takes `O(m log m)` time. Query retrieval also materializes the matching document IDs.
-
-### 6. Usable MVP
-- [ ] Provide CLI commands to index a directory and run searches
-- [ ] Add integration tests using a fixed sample corpus
-- [ ] Document build, run, test, limitations, and example output
-- [ ] Verify clean build; tag `v0.1.0` when all MVP criteria pass
-
-### 7. After MVP
-- [ ] Persist and reload an index with format/version checks
-- [ ] Add incremental updates, modifications, and deletions
-- [ ] Benchmark indexing time, query latency, and memory usage
-- [ ] Experiment with BM25, autocomplete, fuzzy matching, and PDF support
-
-## Engineering standards
-
-- **Correctness before optimization.** Prefer understandable, measured implementations over premature abstractions.
-- **Separation of concerns.** Keep I/O, parsing, indexing, query evaluation, scoring, and presentation separate.
-- **Explicit contracts.** Validate public inputs and define behavior for nulls, duplicates, missing files, and malformed queries.
-- **Determinism.** Stable document IDs within an index, reproducible tests, and deterministic tie-breaking.
-- **Security and filesystem safety.** Index only an explicitly selected directory; never execute document content; bound file size/resource use; handle symlinks deliberately.
-- **Tests at every step.** Unit tests for algorithms, integration tests for the pipeline, and regression tests for bugs.
-- **Complexity awareness.** Document expected time/space complexity of significant algorithms; benchmark before optimizing.
-- **Dependency discipline.** Use Java standard library for search algorithms; keep dependencies minimal and justified. Do not use Lucene for core indexing/ranking during the learning phase.
-- **Clean Git history.** Commit one coherent, working change at a time; use descriptive commit messages (`feat:`, `test:`, `fix:`, `refactor:`, `docs:`).
-
-## Codex workflow
-
-1. Read this README and inspect existing files **before** editing.
-2. Implement **only the next unchecked checklist item** unless asked otherwise; do not mass-scaffold future milestones.
-3. Explain key design choices, trade-offs, and algorithm complexity briefly.
-4. Add/update tests, run `mvn test`, and report results honestly. Do not mark a task complete if tests fail or cannot run.
-5. Show changed files and a proposed commit message. **Do not commit or push unless explicitly asked.**
-6. Preserve existing project conventions and avoid unrelated refactors.
+The project includes Spring Boot dependencies, but the search algorithms and standalone CLI do not require a running Spring Boot server.
 
 ## Getting started
 
-From the repository root:
+Clone the repository and build it:
 
 ```bash
-mvn test
+git clone https://github.com/chaukz/StackTrace.git
+cd StackTrace
+./mvnw clean verify
 ```
 
-A runnable CLI command will be documented once Milestone 6 is implemented. Until then, do not assume a CLI or search API already exists.
+Create a small sample corpus:
 
-## Progress
+```bash
+mkdir -p sample-docs
+echo 'Java is used for backend development' > sample-docs/java.txt
+echo 'Python is used for machine learning' > sample-docs/python.txt
+echo 'Java and Python are programming languages' > sample-docs/programming.md
+```
 
-**Current status:** milestones 1 through 5 are implemented and covered by tests, including length-normalized TF-IDF ranking and top-K selection. The CLI and other milestone 6 work remain incomplete.
+Run the CLI directly from the compiled classes:
+
+```bash
+java -cp target/classes com.chaukz.stacktrace.cli.StackTraceCli interactive sample-docs
+```
+
+Alternatively, open `StackTraceCli.java` in IntelliJ IDEA, run its `main()` method, and set **Program arguments** to `interactive sample-docs`. Set the working directory to the repository root.
+
+> **Note:** `stacktrace` in the examples below represents the CLI interface, not a globally installed executable. Use `java -cp target/classes com.chaukz.stacktrace.cli.StackTraceCli` in its place unless you create a shell alias or launcher.
+
+## CLI commands
+
+| Command | Description |
+| --- | --- |
+| `index <directory>` | Scan and index supported documents in the current process. The index is **not saved** to disk. |
+| `search <directory> <query>` | Build an in-memory index and print up to 10 ranked matches. |
+| `interactive <directory>` | Build the index once and accept multiple queries until `exit` or end-of-input. |
+
+### One-off search
+
+```bash
+java -cp target/classes com.chaukz.stacktrace.cli.StackTraceCli search sample-docs 'java AND python'
+```
+
+Example output (scores depend on the corpus):
+
+```text
+programming.md
+Path: /path/to/StackTrace/sample-docs/programming.md
+Score: 0.13515503603605478
+```
+
+### Interactive search
+
+```bash
+java -cp target/classes com.chaukz.stacktrace.cli.StackTraceCli interactive sample-docs
+```
+
+Example session:
+
+```text
+StackTrace Interactive Search
+Enter a query or type 'exit'.
+stacktrace> java
+1. java.txt
+   Path: /path/to/StackTrace/sample-docs/java.txt
+   Score: 0.0676
+2. programming.md
+   Path: /path/to/StackTrace/sample-docs/programming.md
+   Score: 0.0676
+stacktrace> java AND python
+1. programming.md
+   Path: /path/to/StackTrace/sample-docs/programming.md
+   Score: 0.1352
+stacktrace> rust
+No results found.
+stacktrace> exit
+Goodbye!
+```
+
+The interactive command keeps the same in-memory index and search engine alive between queries. Invalid queries are reported without terminating the session.
+
+## Query syntax
+
+| Query | Meaning |
+| --- | --- |
+| `java` | Documents containing `java` |
+| `java AND python` | Documents containing both terms |
+| `java OR python` | Documents containing either term |
+| `java NOT python` | Documents containing `java` but not `python` |
+
+Operators are case-insensitive. The current parser supports **one term** or **exactly two terms with one operator**; it does not implement parentheses, operator precedence across longer expressions, quoted phrases, or `XOR`.
+
+## How it works
+
+```text
+Directory
+   |
+   v
+DocumentDiscovery --> UTF-8 documents
+   |
+   v
+Tokenizer / TextNormalizer
+   |
+   v
+IndexBuilder --> InvertedIndex + DocumentRegistry
+                          |
+Query --> SearchEngine (AND / OR / NOT)
+                          |
+                          v
+                     TfIdfScorer
+                          |
+                          v
+                     Top-K results
+                          |
+                          v
+                    CLI output
+```
+
+The core packages are:
+
+| Package | Responsibility |
+| --- | --- |
+| `model` | Documents, tokens, postings, and search results |
+| `analysis` | Text normalization and tokenization |
+| `io` | Filesystem document discovery |
+| `indexing` | Document registry, inverted index, and index building |
+| `search` | Boolean retrieval, TF-IDF scoring, and ranked results |
+| `cli` | Command dispatch, one-off search, and interactive mode |
+
+### Ranking
+
+For a term `t` and document `d`, the normalized score is:
+
+```text
+score(t, d) = [tf(t, d) / length(d)] * ln(N / df(t))
+```
+
+Here, `tf` is the term frequency in the document, `length` is the document token count, `N` is the number of registered documents, and `df` is the number of documents containing the term. `AND` and `OR` sum the scores of their query terms; `NOT` uses its excluded term only to filter results. Empty documents score zero.
+
+Results are sorted by descending score, with ascending document ID as the tie-breaker. The bounded top-K selection takes **O(m log k)** time and **O(k)** heap space for `m` matching documents, in addition to the matching IDs held during retrieval.
+
+## Tests
+
+Run the full suite:
+
+```bash
+./mvnw test
+```
+
+Run a clean build and verification:
+
+```bash
+./mvnw clean verify
+```
+
+The latest locally reported clean verification passed **90 tests with 0 failures**. Coverage includes tokenization, document discovery, indexing, Boolean retrieval, ranking, CLI commands, interactive input, invalid operators, and end-of-input behavior.
+
+Interactive CLI tests temporarily replace `System.in` and `System.out` and restore them afterward. They currently assume **sequential test execution**, not parallel execution.
+
+## Current limitations
+
+- **In-memory only:** the index is not persisted. Running `index` and then `search` as separate processes does not reuse an index; `search` rebuilds it, while `interactive` builds it once per session.
+- **Supported formats:** UTF-8 `.txt` and `.md`; no PDFs, Office documents, or binary formats.
+- **Limited query grammar:** one term or a two-term Boolean expression; no phrase queries, parentheses, or chained expressions.
+- **No incremental filesystem watching:** a running interactive session does not automatically detect file changes.
+- **No packaged launcher yet:** run the CLI through its Java main class or an IDE configuration.
+- **Not yet benchmarked for large corpora:** memory usage and indexing performance require further measurement.
+
+## Roadmap
+
+### MVP — v0.1.0
+
+- [x] Document ingestion and tokenization
+- [x] Inverted index and document registry
+- [x] Boolean queries (`AND`, `OR`, `NOT`)
+- [x] Length-normalized TF-IDF ranking and top-K selection
+- [x] One-off and interactive CLI
+- [x] Unit and integration tests
+- [x] README usage and limitations
+- [ ] Final release verification and `v0.1.0` tag
+
+### Beyond the MVP
+
+- [ ] Persist and reload an index
+- [ ] Incremental updates and deletions
+- [ ] Query language improvements and phrase search
+- [ ] Benchmark indexing, latency, and memory
+- [ ] BM25, fuzzy matching, and autocomplete
+- [ ] PDF support and optional REST API
+
+## Development approach
+
+StackTrace is built milestone by milestone, with an emphasis on understanding the underlying algorithms and testing each change. The search core stays separate from Spring Boot so it can be reused in future adapters without rewriting the indexing or ranking logic.
+
+## License
+
+No license is declared here. Refer to the repository for its current licensing status before reuse or redistribution.
